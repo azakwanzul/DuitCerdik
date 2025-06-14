@@ -18,7 +18,6 @@ const DuitCerdik = () => {
     { id: 1, name: 'Emergency Fund', target: 5000, current: 1200, deadline: '2025-12-31' },
     { id: 2, name: 'Japan Trip', target: 3000, current: 800, deadline: '2025-09-30' }
   ]);
-  // Add this after the savingsGoals state
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     name: '',
@@ -91,7 +90,20 @@ const DuitCerdik = () => {
       food: 'Food',
       transport: 'Transport',
       entertainment: 'Entertainment',
-      surplus: 'Monthly Surplus'
+      surplus: 'Monthly Surplus',
+      addGoal: 'Add Goal',
+      goalName: 'Goal Name',
+      targetAmount: 'Target Amount',
+      currentAmount: 'Current Amount',
+      targetDate: 'Target Date',
+      remaining: 'Remaining',
+      deadline: 'Deadline',
+      prediction: 'Prediction',
+      recentTransactions: 'Recent Transactions',
+      budgetManagement: 'Budget Management',
+      date: 'Date',
+      payment: 'Payment',
+      type: 'Type'
     },
     bm: {
       title: 'DuitCerdik',
@@ -127,7 +139,20 @@ const DuitCerdik = () => {
       food: 'Makanan',
       transport: 'Pengangkutan',
       entertainment: 'Hiburan',
-      surplus: 'Lebihan Bulanan'
+      surplus: 'Lebihan Bulanan',
+      addGoal: 'Tambah Matlamat',
+      goalName: 'Nama Matlamat',
+      targetAmount: 'Jumlah Sasaran',
+      currentAmount: 'Jumlah Semasa',
+      targetDate: 'Tarikh Sasaran',
+      remaining: 'Baki',
+      deadline: 'Tarikh Akhir',
+      prediction: 'Ramalan',
+      recentTransactions: 'Transaksi Terkini',
+      budgetManagement: 'Pengurusan Bajet',
+      date: 'Tarikh',
+      payment: 'Bayaran',
+      type: 'Jenis'
     }
   };
 
@@ -265,31 +290,31 @@ const DuitCerdik = () => {
     };
   }, [lifestyleSimulator]);
 
-  // Add this after simulatorResults useMemo
-const goalPredictions = useMemo(() => {
-  const monthlySavings = simulatorResults.surplus || 0;
-  
-  return savingsGoals.map(goal => {
-    const remaining = goal.target - goal.current;
-    if (monthlySavings <= 0 || remaining <= 0) {
-      return { ...goal, monthsToComplete: null, canAchieve: false };
-    }
+  // Goal predictions
+  const goalPredictions = useMemo(() => {
+    const monthlySavings = simulatorResults.surplus || 0;
     
-    const monthsToComplete = Math.ceil(remaining / monthlySavings);
-    const predictedDate = new Date();
-    predictedDate.setMonth(predictedDate.getMonth() + monthsToComplete);
-    
-    const deadlineDate = new Date(goal.deadline);
-    const canAchieve = predictedDate <= deadlineDate;
-    
-    return { 
-      ...goal, 
-      monthsToComplete, 
-      predictedDate: predictedDate.toISOString().split('T')[0],
-      canAchieve 
-    };
-  });
-}, [savingsGoals, simulatorResults.surplus]);
+    return savingsGoals.map(goal => {
+      const remaining = goal.target - goal.current;
+      if (monthlySavings <= 0 || remaining <= 0) {
+        return { ...goal, monthsToComplete: null, canAchieve: false };
+      }
+      
+      const monthsToComplete = Math.ceil(remaining / monthlySavings);
+      const predictedDate = new Date();
+      predictedDate.setMonth(predictedDate.getMonth() + monthsToComplete);
+      
+      const deadlineDate = new Date(goal.deadline);
+      const canAchieve = predictedDate <= deadlineDate;
+      
+      return { 
+        ...goal, 
+        monthsToComplete, 
+        predictedDate: predictedDate.toISOString().split('T')[0],
+        canAchieve 
+      };
+    });
+  }, [savingsGoals, simulatorResults.surplus]);
 
   const handleAddTransaction = () => {
     if (!newTransaction.amount) return;
@@ -311,6 +336,22 @@ const goalPredictions = useMemo(() => {
       notes: ''
     });
     setShowAddTransaction(false);
+  };
+
+  const handleAddGoal = () => {
+    if (!newGoal.name || !newGoal.target) return;
+    
+    const goal = {
+      id: Date.now(),
+      name: newGoal.name,
+      target: parseFloat(newGoal.target),
+      current: parseFloat(newGoal.current) || 0,
+      deadline: newGoal.deadline || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Default 1 year from now
+    };
+    
+    setSavingsGoals([...savingsGoals, goal]);
+    setNewGoal({ name: '', target: '', current: '', deadline: '' });
+    setShowAddGoal(false);
   };
 
   const handleReset = () => {
@@ -339,21 +380,6 @@ const goalPredictions = useMemo(() => {
       exportDate: new Date().toISOString()
     };
     
-    const handleAddGoal = () => {
-      if (!newGoal.name || !newGoal.target) return;
-      
-      const goal = {
-        id: Date.now(),
-        name: newGoal.name,
-        target: parseFloat(newGoal.target),
-        current: parseFloat(newGoal.current) || 0,
-        deadline: newGoal.deadline || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Default 1 year from now
-      };
-      
-      setSavingsGoals([...savingsGoals, goal]);
-      setNewGoal({ name: '', target: '', current: '', deadline: '' });
-      setShowAddGoal(false);
-    };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -540,7 +566,7 @@ const goalPredictions = useMemo(() => {
                 <ResponsiveContainer width="100%" height={250}>
                   <RechartsPieChart>
                     <Tooltip formatter={(value) => [`${getCurrencySymbol()}${convertCurrency(value)}`, 'Amount']} />
-                    <RechartsPieChart>
+                    <RechartsPieChart data={pieData} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value">
                       {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
@@ -642,6 +668,255 @@ const goalPredictions = useMemo(() => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Expenses Tab */}
+        {activeTab === 'expenses' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">{t.recentTransactions}</h2>
+              
+              {transactions.length === 0 ? (
+                <div className="text-center py-8">
+                  <PlusCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No transactions yet. Add your first expense!</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full table-auto">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">{t.date}</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">{t.category}</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">{t.amount}</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">{t.payment}</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">{t.type}</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">{t.notes}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {transactions.slice(-10).reverse().map((transaction) => (
+                        <tr key={transaction.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {new Date(transaction.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.category}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {getCurrencySymbol()}{convertCurrency(transaction.amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.paymentMethod}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              transaction.needWant === 'Need' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {transaction.needWant}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Budget Tab */}
+        {activeTab === 'budget' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">{t.budgetManagement}</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {categories.map(category => {
+                  const spent = categorySpending[category] || 0;
+                  const budget = budgets[category];
+                  const percentage = budget > 0 ? (spent / budget) * 100 : 0;
+                  
+                  return (
+                    <div key={category} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-medium text-gray-800">{category}</h3>
+                        <span className="text-sm text-gray-600">
+                          {getCurrencySymbol()}{convertCurrency(spent)} / {getCurrencySymbol()}{convertCurrency(budget)}
+                        </span>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              percentage > 100 ? 'bg-red-500' :
+                              percentage > 80 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">{percentage.toFixed(1)}% used</p>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-700">Budget:</label>
+                        <input
+                          type="number"
+                          value={budget}
+                          onChange={(e) => setBudgets({
+                            ...budgets,
+                            [category]: parseFloat(e.target.value) || 0
+                          })}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Goals Tab */}
+        {activeTab === 'goals' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">{t.savingsGoals}</h2>
+                <button
+                  onClick={() => setShowAddGoal(!showAddGoal)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>{t.addGoal}</span>
+                </button>
+              </div>
+
+              {/* Add Goal Form */}
+              {showAddGoal && (
+                <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t.goalName}</label>
+                      <input
+                        type="text"
+                        value={newGoal.name}
+                        onChange={(e) => setNewGoal({...newGoal, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="e.g., New Car, Wedding"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t.targetAmount}</label>
+                      <input
+                        type="number"
+                        value={newGoal.target}
+                        onChange={(e) => setNewGoal({...newGoal, target: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="5000"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t.currentAmount}</label>
+                      <input
+                        type="number"
+                        value={newGoal.current}
+                        onChange={(e) => setNewGoal({...newGoal, current: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="0"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t.targetDate}</label>
+                      <input
+                        type="date"
+                        value={newGoal.deadline}
+                        onChange={(e) => setNewGoal({...newGoal, deadline: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2 mt-4">
+                    <button
+                      onClick={handleAddGoal}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      {t.addGoal}
+                    </button>
+                    <button
+                      onClick={() => setShowAddGoal(false)}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      {t.cancel}
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                {goalPredictions.map(goal => {
+                  const progress = (goal.current / goal.target) * 100;
+                  const daysLeft = Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <div key={goal.id} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-800">{goal.name}</h3>
+                          <p className="text-sm text-gray-600">
+                            {getCurrencySymbol()}{convertCurrency(goal.current)} / {getCurrencySymbol()}{convertCurrency(goal.target)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-purple-600">{progress.toFixed(1)}%</p>
+                          <p className="text-xs text-gray-500">{daysLeft} days left</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="bg-gray-200 rounded-full h-3">
+                          <div 
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>{t.remaining}: {getCurrencySymbol()}{convertCurrency(goal.target - goal.current)}</span>
+                        <span>{t.deadline}: {new Date(goal.deadline).toLocaleDateString()}</span>
+                      </div>
+                      
+                      {/* Prediction Section */}
+                      {goal.monthsToComplete && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border border-purple-200">
+                          <p className="text-sm font-medium text-gray-700 mb-1">{t.prediction}:</p>
+                          <div className="space-y-1 text-xs">
+                            <p className={`${goal.canAchieve ? 'text-green-600' : 'text-red-600'}`}>
+                              {goal.canAchieve ? '✅' : '⚠️'} 
+                              {goal.canAchieve 
+                                ? ` You'll reach this goal in ${goal.monthsToComplete} months (${new Date(goal.predictedDate).toLocaleDateString()})`
+                                : ` At current savings rate, you'll need ${goal.monthsToComplete} months but deadline is sooner`
+                              }
+                            </p>
+                            <p className="text-gray-600">
+                              Based on monthly surplus: {getCurrencySymbol()}{convertCurrency(simulatorResults.surplus)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -755,255 +1030,6 @@ const goalPredictions = useMemo(() => {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {/* Expenses Tab */}
-        {activeTab === 'expenses' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Recent Transactions</h2>
-              
-              {transactions.length === 0 ? (
-                <div className="text-center py-8">
-                  <PlusCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No transactions yet. Add your first expense!</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full table-auto">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Date</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Category</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Amount</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Payment</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Type</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {transactions.slice(-10).reverse().map((transaction) => (
-                        <tr key={transaction.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {new Date(transaction.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.category}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {getCurrencySymbol()}{convertCurrency(transaction.amount)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.paymentMethod}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.needWant === 'Need' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {transaction.needWant}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.notes}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Budget Tab */}
-        {activeTab === 'budget' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Budget Management</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {categories.map(category => {
-                  const spent = categorySpending[category] || 0;
-                  const budget = budgets[category];
-                  const percentage = budget > 0 ? (spent / budget) * 100 : 0;
-                  
-                  return (
-                    <div key={category} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-medium text-gray-800">{category}</h3>
-                        <span className="text-sm text-gray-600">
-                          {getCurrencySymbol()}{convertCurrency(spent)} / {getCurrencySymbol()}{convertCurrency(budget)}
-                        </span>
-                      </div>
-                      
-                      <div className="mb-3">
-                        <div className="bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              percentage > 100 ? 'bg-red-500' :
-                              percentage > 80 ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}
-                            style={{ width: `${Math.min(percentage, 100)}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-gray-600 mt-1">{percentage.toFixed(1)}% used</p>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm text-gray-700">Budget:</label>
-                        <input
-                          type="number"
-                          value={budget}
-                          onChange={(e) => setBudgets({
-                            ...budgets,
-                            [category]: parseFloat(e.target.value) || 0
-                          })}
-                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Goals Tab */}
-{activeTab === 'goals' && (
-  <div className="space-y-6">
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Savings Goals</h2>
-        <button
-          onClick={() => setShowAddGoal(!showAddGoal)}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Add Goal</span>
-        </button>
-      </div>
-
-      {/* Add Goal Form */}
-      {showAddGoal && (
-        <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Goal Name</label>
-              <input
-                type="text"
-                value={newGoal.name}
-                onChange={(e) => setNewGoal({...newGoal, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="e.g., New Car, Wedding"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount</label>
-              <input
-                type="number"
-                value={newGoal.target}
-                onChange={(e) => setNewGoal({...newGoal, target: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="5000"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current Amount</label>
-              <input
-                type="number"
-                value={newGoal.current}
-                onChange={(e) => setNewGoal({...newGoal, current: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="0"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
-              <input
-                type="date"
-                value={newGoal.deadline}
-                onChange={(e) => setNewGoal({...newGoal, deadline: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-          </div>
-          
-          <div className="flex space-x-2 mt-4">
-            <button
-              onClick={handleAddGoal}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Add Goal
-            </button>
-            <button
-              onClick={() => setShowAddGoal(false)}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-              
-              <div className="space-y-4">
-                {goalPredictions.map(goal => {
-                  const progress = (goal.current / goal.target) * 100;
-                  const daysLeft = Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24));
-                  
-                  return (
-                    <div key={goal.id} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="font-semibold text-gray-800">{goal.name}</h3>
-                          <p className="text-sm text-gray-600">
-                            {getCurrencySymbol()}{convertCurrency(goal.current)} / {getCurrencySymbol()}{convertCurrency(goal.target)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-purple-600">{progress.toFixed(1)}%</p>
-                          <p className="text-xs text-gray-500">{daysLeft} days left</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mb-3">
-                        <div className="bg-gray-200 rounded-full h-3">
-                          <div 
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(progress, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>Remaining: {getCurrencySymbol()}{convertCurrency(goal.target - goal.current)}</span>
-                        <span>Deadline: {new Date(goal.deadline).toLocaleDateString()}</span>
-                      </div>
-                      
-                      {/* Prediction Section */}
-                      {goal.monthsToComplete && (
-                        <div className="mt-3 p-3 bg-white rounded-lg border border-purple-200">
-                          <p className="text-sm font-medium text-gray-700 mb-1">Prediction:</p>
-                          <div className="space-y-1 text-xs">
-                            <p className={`${goal.canAchieve ? 'text-green-600' : 'text-red-600'}`}>
-                              {goal.canAchieve ? '✅' : '⚠️'} 
-                              {goal.canAchieve 
-                                ? ` You'll reach this goal in ${goal.monthsToComplete} months (${new Date(goal.predictedDate).toLocaleDateString()})`
-                                : ` At current savings rate, you'll need ${goal.monthsToComplete} months but deadline is sooner`
-                              }
-                            </p>
-                            <p className="text-gray-600">
-                              Based on monthly surplus: {getCurrencySymbol()}{convertCurrency(simulatorResults.surplus)}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
         )}
